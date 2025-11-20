@@ -1,176 +1,187 @@
+// backend/src/controllers/userController.js
+const mongoose = require('mongoose');
 const User = require('../models/User');
+const Post = require('../models/Post');
+const Comment = require('../models/Comment'); // ensure this file exists
 const bcrypt = require('bcryptjs');
-const fs = require('fs');
-const path = require('path');
 
+
+// Basic profile update (keeps previous behaviour you had)
 exports.updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { name, bio } = req.body;
+    const { name, bio, handle } = req.body;
     const update = {};
 
     if (name) update.name = name;
     if (bio !== undefined) update.bio = bio;
 
-    // if multer put file in req.file, update avatarUrl
-    if (req.file) {
-      // remove old avatar file if it exists and is local
-      const user = await User.findById(userId).select('avatarUrl');
-      if (user && user.avatarUrl && user.avatarUrl.startsWith('/uploads/')) {
-        const oldPath = path.join(__dirname, '..', '..', user.avatarUrl);
-        // best-effort remove
-        fs.unlink(oldPath, (err) => { if (err) {/* ignore */} });
-      }
+    if (handle) {
+      const existing = await User.findOne({ handle: handle.toLowerCase(), _id: { $ne: userId } });
+      if (existing) return res.status(400).json({ message: 'Handle already in use' });
+      update.handle = handle.toLowerCase();
+    }
 
+    if (req.file) {
+      // optionally remove old avatar (best-effort)
+      const prev = await User.findById(userId).select('avatarUrl');
+      if (prev && prev.avatarUrl && prev.avatarUrl.startsWith('/uploads/')) {
+        // best-effort remove (no await)
+        const fs = require('fs');
+        const path = require('path');
+        const p = path.join(process.cwd(), prev.avatarUrl);
+        fs.unlink(p, () => {});
+      }
       update.avatarUrl = `/uploads/${req.file.filename}`;
     }
 
-    const updated = await User.findByIdAndUpdate(userId, update, { new: true }).select('-passwordHash -__v');
-    res.json({ message: 'Profile updated', user: updated });
+    const updated = await User.findByIdAndUpdate(userId, update, { new: true }).select('-passwordHash -__v').lean();
+    if (!updated) return res.status(404).json({ message: 'User not found' });
+
+    // add friendly counts
+    updated.followersCount = Array.isArray(updated.followers) ? updated.followers.length : 0;
+    updated.followingCount = Array.isArray(updated.following) ? updated.following.length : 0;
+    updated.joinedAt = updated.createdAt;
+
+    res.json({ user: updated });
   } catch (err) {
     next(err);
   }
 };
 
+// change password (simple)
 exports.changePassword = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword) return res.status(400).json({ message: 'currentPassword and newPassword required' });
-
+    const { oldPassword, newPassword } = req.body;
     const user = await User.findById(userId).select('passwordHash');
     if (!user) return res.status(404).json({ message: 'User not found' });
-
-    const match = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!match) return res.status(400).json({ message: 'Current password is incorrect' });
-
-    const newHash = await bcrypt.hash(newPassword, 10);
-    user.passwordHash = newHash;
+    const ok = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!ok) return res.status(400).json({ message: 'Old password incorrect' });
+    const hash = await bcrypt.hash(newPassword, 10);
+    user.passwordHash = hash;
     await user.save();
-
-    res.json({ message: 'Password updated successfully' });
-  } catch (err) {
-    next(err);
-  }
+    res.json({ message: 'Password updated' });
+  } catch (err) { next(err); }
 };
 
-// PUBLIC profile by user id
+// public profile by id
 exports.getPublicProfileById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id)
-      .select('name handle bio avatarUrl points counts followers following createdAt')
-      .populate('followers', 'handle name avatarUrl')
-      .populate('following', 'handle name avatarUrl');
-
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid id' });
+    const user = await User.findById(id).select('-passwordHash -__v').lean();
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // shape response: counts and limited follower info
-    res.json({
-      user: {
-        id: user._id,
-        name: user.name,
-        handle: user.handle,
-        bio: user.bio,
-        avatarUrl: user.avatarUrl,
-        points: user.points,
-        counts: user.counts,
-        followersCount: user.followers.length,
-        followingCount: user.following.length,
-        // include small arrays (caps) for preview (max 10)
-        followersPreview: user.followers.slice(0, 10),
-        followingPreview: user.following.slice(0, 10),
-        joinedAt: user.createdAt
-      }
-    });
-  } catch (err) {
-    next(err);
-  }
+    user.followersCount = Array.isArray(user.followers) ? user.followers.length : 0;
+    user.followingCount = Array.isArray(user.following) ? user.following.length : 0;
+    user.joinedAt = user.createdAt;
+    user.categoriesPreview = user.categories ? user.categories.slice(0,6) : [];
+
+    res.json({ user });
+  } catch (err) { next(err); }
 };
 
-// PUBLIC profile by handle
+// public profile by handle
 exports.getPublicProfileByHandle = async (req, res, next) => {
   try {
     const { handle } = req.params;
-    const user = await User.findOne({ handle: handle.toLowerCase() })
-      .select('name handle bio avatarUrl points counts followers following createdAt')
-      .populate('followers', 'handle name avatarUrl')
-      .populate('following', 'handle name avatarUrl');
-
+    const user = await User.findOne({ handle: handle.toLowerCase() }).select('-passwordHash -__v').lean();
     if (!user) return res.status(404).json({ message: 'User not found' });
-
-    res.json({
-      user: {
-        id: user._id,
-        name: user.name,
-        handle: user.handle,
-        bio: user.bio,
-        avatarUrl: user.avatarUrl,
-        points: user.points,
-        counts: user.counts,
-        followersCount: user.followers.length,
-        followingCount: user.following.length,
-        followersPreview: user.followers.slice(0, 10),
-        followingPreview: user.following.slice(0, 10),
-        joinedAt: user.createdAt
-      }
-    });
-  } catch (err) {
-    next(err);
-  }
+    user.followersCount = Array.isArray(user.followers) ? user.followers.length : 0;
+    user.followingCount = Array.isArray(user.following) ? user.following.length : 0;
+    user.joinedAt = user.createdAt;
+    user.categoriesPreview = user.categories ? user.categories.slice(0,6) : [];
+    res.json({ user });
+  } catch (err) { next(err); }
 };
 
-// follow a user
+// follow / unfollow helpers
 exports.followUser = async (req, res, next) => {
   try {
-    const meId = req.user.id;
-    const { id: targetId } = req.params;
+    const me = req.user.id;
+    const other = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(other)) return res.status(400).json({ message: 'Invalid id' });
+    if (me === other) return res.status(400).json({ message: 'Cannot follow yourself' });
 
-    if (meId === targetId) return res.status(400).json({ message: "You cannot follow yourself" });
+    await User.findByIdAndUpdate(other, { $addToSet: { followers: me } });
+    await User.findByIdAndUpdate(me, { $addToSet: { following: other } });
 
-    const me = await User.findById(meId);
-    const target = await User.findById(targetId);
-
-    if (!me || !target) return res.status(404).json({ message: 'User not found' });
-
-    // already following?
-    if (target.followers.includes(me._id)) {
-      return res.status(400).json({ message: 'Already following' });
-    }
-
-    target.followers.push(me._id);
-    me.following.push(target._id);
-
-    await target.save();
-    await me.save();
-
-    res.json({ message: `Now following ${target.handle}`, followersCount: target.followers.length });
-  } catch (err) {
-    next(err);
-  }
+    const updated = await User.findById(other).select('followers').lean();
+    res.json({ message: 'Followed', followersCount: (updated.followers||[]).length });
+  } catch (err) { next(err); }
 };
 
-// unfollow
 exports.unfollowUser = async (req, res, next) => {
   try {
-    const meId = req.user.id;
-    const { id: targetId } = req.params;
+    const me = req.user.id;
+    const other = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(other)) return res.status(400).json({ message: 'Invalid id' });
+    await User.findByIdAndUpdate(other, { $pull: { followers: me } });
+    await User.findByIdAndUpdate(me, { $pull: { following: other } });
+    const updated = await User.findById(other).select('followers').lean();
+    res.json({ message: 'Unfollowed', followersCount: (updated.followers||[]).length });
+  } catch (err) { next(err); }
+};
 
-    if (meId === targetId) return res.status(400).json({ message: "You cannot unfollow yourself" });
+// Save a post (current user)
+exports.savePost = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { postId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(postId)) return res.status(400).json({ message: 'Invalid post id' });
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    await User.findByIdAndUpdate(userId, { $addToSet: { savedPosts: post._id } });
+    res.json({ message: 'Post saved' });
+  } catch (err) { next(err); }
+};
 
-    const me = await User.findById(meId);
-    const target = await User.findById(targetId);
+// Unsave a post
+exports.unsavePost = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { postId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(postId)) return res.status(400).json({ message: 'Invalid post id' });
+    await User.findByIdAndUpdate(userId, { $pull: { savedPosts: postId } });
+    res.json({ message: 'Post unsaved' });
+  } catch (err) { next(err); }
+};
 
-    if (!me || !target) return res.status(404).json({ message: 'User not found' });
+// Get saved posts for a user (public)
+exports.getSavedPosts = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+    const user = await User.findById(id).populate({
+      path: 'savedPosts',
+      populate: { path: 'author', select: 'name handle avatarUrl' }
+    }).lean();
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ saved: user.savedPosts || [] });
+  } catch (err) { next(err); }
+};
 
-    target.followers = target.followers.filter(f => f.toString() !== meId);
-    me.following = me.following.filter(f => f.toString() !== targetId);
+// Get posts that mention (tag) this user
+exports.getTaggedPosts = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+    const posts = await Post.find({ mentions: id })
+      .sort({ createdAt: -1 })
+      .populate('author', 'name handle avatarUrl')
+      .populate('category', 'title slug')
+      .lean();
+    res.json({ posts });
+  } catch (err) { next(err); }
+};
 
-    await target.save();
-    await me.save();
-
-    res.json({ message: `Unfollowed ${target.handle}`, followersCount: target.followers.length });
-  } catch (err) {
-    next(err);
-  }
+// Get comments by user (for profile)
+exports.getCommentsByUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+    const comments = await Comment.find({ author: id }).sort({ createdAt: -1 }).populate('postId', 'title').lean();
+    res.json({ comments });
+  } catch (err) { next(err); }
 };

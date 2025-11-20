@@ -1,0 +1,15 @@
+/* category.css */
+.container { max-width: 980px; margin: 18px auto; padding: 0 12px; }
+.category-header { margin-bottom: 16px; padding: 18px; border-radius: 12px; background:#fff; box-shadow:0 8px 24px rgba(12,12,16,0.06); }
+.ch-top { display:flex; justify-content:space-between; align-items:flex-start; }
+.ch-desc { margin-top:12px; color:#374151 }
+.ch-rules { margin-top:12px; padding:12px; background:#f8fafc; border-radius:10px }
+.ch-moderators { margin-top:12px }
+.mods-list { display:flex; gap:12px; align-items:center; }
+.mod-item { display:flex; gap:8px; align-items:center; text-decoration:none; color:inherit; padding:6px; border-radius:8px }
+.mod-item img { width:44px; height:44px; border-radius:8px; object-fit:cover }
+.category-posts { margin-top:18px }
+.post-card.small { display:flex; gap:12px; padding:10px; background:#fff; border-radius:10px; margin-bottom:10px; }
+.post-card.small img { width:54px;height:54px;border-radius:8px; object-fit:cover }
+.post-title { font-weight:600; text-decoration:none; color:#111 }
+.post-excerpt { margin-top:6px; color:#374151 }

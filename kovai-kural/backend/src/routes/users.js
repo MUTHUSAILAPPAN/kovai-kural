@@ -5,20 +5,15 @@ const path = require('path');
 
 const { verifyToken, allowRoles } = require('../middlewares/auth');
 const User = require('../models/User');
-const {
-  updateProfile,
-  changePassword,
-  getPublicProfileById,
-  getPublicProfileByHandle,
-  followUser,
-  unfollowUser
-} = require('../controllers/userController');
+const { updateProfile, changePassword, getPublicProfileById, getPublicProfileByHandle, followUser, unfollowUser, savePost, unsavePost, getSavedPosts, getTaggedPosts, getCommentsByUser } = require('../controllers/userController');
+
 
 // Setup multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', '..', 'uploads'));
-  },
+  const uploadsPath = path.join(process.cwd(), 'uploads');
+  cb(null, uploadsPath);
+},
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname);
     const name = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
@@ -54,6 +49,16 @@ router.put('/me', verifyToken, upload.single('avatar'), updateProfile);
 
 // POST /api/users/me/password  (change password)
 router.post('/me/password', verifyToken, changePassword);
+
+// Save / unsave (authenticated)
+router.post('/me/save/:postId', verifyToken, savePost);
+router.post('/me/unsave/:postId', verifyToken, unsavePost);
+
+// Public routes (by user id)
+router.get('/:id/saved', getSavedPosts);
+router.get('/:id/tagged', getTaggedPosts);
+router.get('/:id/comments', getCommentsByUser);
+
 
 // PUBLIC profile endpoints
 // GET by id

@@ -47,7 +47,9 @@ const userSchema = new mongoose.Schema(
       posts: { type: Number, default: 0 },
       comments: { type: Number, default: 0 },
       submittedIssues: { type: Number, default: 0 }
-    }
+    },
+
+    savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }]
   },
   { timestamps: true }
 );
