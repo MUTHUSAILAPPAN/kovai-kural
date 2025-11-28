@@ -1,56 +1,105 @@
+// src/pages/Categories.jsx
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import CreateCategoryModal from '../components/CreateCategoryModal'
 import './categories.css'
-import { Link } from 'react-router-dom'
 
 export default function Categories() {
   const [categories, setCategories] = useState([])
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
+  
 
- useEffect(() => {
-  load()
-}, [])
+  const nav = useNavigate()
 
-async function load() {
-  try {
-    const res = await api.get('/categories')
-    console.log('categories loaded:', res.data.categories) // <-- add this
-    setCategories(res.data.categories || [])
-  } catch (e) { console.error(e) }
-}
+  useEffect(() => {
+    load()
+  }, [])
 
+  async function load() {
+    try {
+      const res = await api.get('/categories')
+      console.log('categories loaded:', res.data.categories)
+      setCategories(res.data.categories || [])
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const openCreateModal = () => setOpen(true)
 
   const onCreated = (cat) => {
     setCategories(prev => [cat, ...prev])
     setOpen(false)
   }
 
-  const filtered = categories.filter(c => c.title.toLowerCase().includes(q.toLowerCase()) || c.description.toLowerCase().includes(q.toLowerCase()))
+  const filtered = categories.filter(c => {
+    const t = c.title?.toLowerCase() || ''
+    const d = c.description?.toLowerCase() || ''
+    const qLower = q.toLowerCase()
+    return t.includes(qLower) || d.includes(qLower)
+  })
 
   return (
-    <div className="container">
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', margin: '16px 0'}}>
-        <h2>Categories</h2>
-        <div>
-          <input placeholder="Search categories..." value={q} onChange={e => setQ(e.target.value)} style={{padding:'8px 12px', borderRadius:8}} />
-          <button className="btn btn-primary" style={{marginLeft:8}} onClick={() => setOpen(true)}>Create Category</button>
+    <div className="categories-page">
+      <div className="categories-header-row">
+        <h1>Categories</h1>
+
+        <div className="categories-header-actions">
+          <input
+            className="categories-search"
+            placeholder="Search categories..."
+            value={q}
+            onChange={e => setQ(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={openCreateModal}
+          >
+            Create Category
+          </button>
         </div>
       </div>
 
-<div className="category-grid">
-  {filtered.map(cat => (
-    <Link to={`/category/${cat.slug}`} key={cat._id} className="category-card" style={{ textDecoration:'none', color:'inherit' }}>
-      <h3>{cat.title}</h3>
-      <p className="muted small">{cat.postCount || 0} posts • Created {new Date(cat.createdAt).toLocaleDateString()}</p>
-      <p>{cat.description}</p>
-      <div className="rules"><strong>Rules: </strong>{cat.rules || 'No specific rules'}</div>
-    </Link>
-  ))}
-</div>
+      {/* grid wrapper */}
+      <div className="categories-grid">
+        {filtered.map(cat => (
+          <article
+            key={cat._id}
+            className="category-card"
+            onClick={() => nav(`/category/${cat.slug}`)}
+          >
+            <div className="category-card-title">{cat.title}</div>
 
-      <CreateCategoryModal open={open} onClose={() => setOpen(false)} onCreated={onCreated} />
+            <div className="category-card-meta">
+              {cat.postCount || 0} posts • Created{' '}
+              {cat.createdAt
+                ? new Date(cat.createdAt).toLocaleDateString()
+                : '—'}
+            </div>
+
+            {cat.description && (
+              <div className="category-card-description">
+                {cat.description}
+              </div>
+            )}
+
+            {cat.rules && (
+              <div className="category-card-rules">
+                <strong>Rules:</strong> {cat.rules}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+
+      <CreateCategoryModal
+        open={open}
+        onClose={() => setOpen(false)}
+        onCreated={onCreated}
+      />
     </div>
   )
 }

@@ -1,0 +1,117 @@
+/* ===== Generic modal overlay ===== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+/* modal card */
+
+.modal-card {
+  width: 100%;
+  max-width: 540px;
+  background: var(--card-bg, #111827);
+  color: var(--text, #e5e7eb);
+  border-radius: 18px;
+  padding: 16px 18px 14px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--line-color, rgba(148, 163, 184, 0.5));
+}
+
+[data-theme="light"] .modal-card {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.16);
+}
+
+/* header */
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.modal-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* form */
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-label {
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modal-input,
+.modal-textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  padding: 7px 9px;
+}
+
+.modal-input::placeholder,
+.modal-textarea::placeholder {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+[data-theme="light"] .modal-input,
+[data-theme="light"] .modal-textarea {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.modal-textarea {
+  resize: vertical;
+}
+
+/* error */
+
+.modal-error {
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.16);
+  color: #fecaca;
+  font-size: 0.82rem;
+}
+
+[data-theme="light"] .modal-error {
+  background: rgba(248, 113, 113, 0.1);
+  color: #b91c1c;
+}
+
+/* footer buttons */
+
+.modal-actions {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Keep it readable on very small screens */
+@media (max-width: 640px) {
+  .modal-card {
+    margin: 0 12px;
+  }
+}

@@ -1,5 +1,7 @@
+// src/components/CreateCategoryModal.jsx
 import React, { useState } from 'react'
 import api from '../services/api'
+import '../styles/modal.css'
 
 export default function CreateCategoryModal({ open, onClose, onCreated }) {
   const [title, setTitle] = useState('')
@@ -13,32 +15,93 @@ export default function CreateCategoryModal({ open, onClose, onCreated }) {
   const submit = async (e) => {
     e.preventDefault()
     setErr('')
-    if (!title.trim()) { setErr('Title is required'); return }
+    if (!title.trim()) {
+      setErr('Title is required')
+      return
+    }
     try {
       setLoading(true)
-      const res = await api.post('/categories', { title, description: desc, rules })
+      const res = await api.post('/categories', {
+        title,
+        description: desc,
+        rules,
+      })
       onCreated && onCreated(res.data.category)
-      setTitle(''); setDesc(''); setRules('')
-    } catch (err) {
-      setErr(err?.response?.data?.message || 'Failed to create')
-    } finally { setLoading(false) }
+      setTitle('')
+      setDesc('')
+      setRules('')
+      onClose()
+    } catch (error) {
+      console.error('Create category error', error)
+      setErr(error?.response?.data?.message || 'Failed to create category')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <h3>Create Category</h3>
-        {err && <div className="error">{err}</div>}
-        <form onSubmit={submit} style={{display:'flex',flexDirection:'column',gap:8}}>
-          <label>Title</label>
-          <input value={title} onChange={e=>setTitle(e.target.value)} />
-          <label>Description</label>
-          <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={3} />
-          <label>Rules (one line or bullet)</label>
-          <textarea value={rules} onChange={e=>setRules(e.target.value)} rows={3} />
-          <div style={{display:'flex', justifyContent:'flex-end', gap:8}}>
-            <button type="button" className="btn" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Creating...' : 'Create'}</button>
+      <div
+        className="modal-card"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="modal-header">
+          <h3>Create Category</h3>
+        </div>
+
+        {err && <div className="modal-error">{err}</div>}
+
+        <form className="modal-form" onSubmit={submit}>
+          <label className="modal-label">
+            Title
+            <input
+              className="modal-input"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., Roads, Water, Waste"
+            />
+          </label>
+
+          <label className="modal-label">
+            Description
+            <textarea
+              className="modal-textarea"
+              value={desc}
+              onChange={(e) => setDesc(e.target.value)}
+              rows={3}
+              placeholder="Short summary of what belongs in this category."
+            />
+          </label>
+
+          <label className="modal-label">
+            Rules (guidelines for posting)
+            <textarea
+              className="modal-textarea"
+              value={rules}
+              onChange={(e) => setRules(e.target.value)}
+              rows={3}
+              placeholder="Be specific: what is allowed / not allowed in this category."
+            />
+          </label>
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+            >
+              {loading ? 'Creating…' : 'Create'}
+            </button>
           </div>
         </form>
       </div>

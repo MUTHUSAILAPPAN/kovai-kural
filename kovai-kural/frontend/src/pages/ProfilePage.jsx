@@ -8,6 +8,8 @@ import ProfileTabs from '../components/profile/ProfileTabs'
 import CategoriesJoined from '../components/profile/CategoriesJoined'
 import MyPostsSidebar from '../components/profile/MyPostsSidebar'
 import './profile.css'
+import '../components/profile/profile-ui.css'
+
 
 export default function ProfilePage() {
   const { handle } = useParams()
@@ -43,7 +45,14 @@ export default function ProfilePage() {
   return (
     <div className="profile-root container-grid">
       <aside className="left-col">
-        <CategoriesJoined categories={profile.categoriesPreview || []} onCreate={() => { /* open create modal if you want */ }} />
+        <CategoriesJoined
+  categories={profile.categoriesPreview || []}
+  onPostCreated={() => {
+    // optional: refresh profile posts list
+    fetchProfile()
+  }}
+/>
+
       </aside>
 
       <main className="center-col profile-main">

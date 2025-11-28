@@ -1,6 +1,8 @@
 // src/components/profile/MyPostsSidebar.jsx
 import React from 'react'
 import PostListItem from '../PostListItem'
+import './profile-ui.css'
+
 
 export default function MyPostsSidebar({ posts = [] }) {
   return (
