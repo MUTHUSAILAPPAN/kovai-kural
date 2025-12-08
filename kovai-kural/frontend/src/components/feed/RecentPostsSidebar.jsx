@@ -2,6 +2,8 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+
 export default function RecentPostsSidebar({ posts = [] }) {
   const nav = useNavigate()
 
@@ -16,7 +18,7 @@ export default function RecentPostsSidebar({ posts = [] }) {
         >
           {p.images && p.images.length > 0 && (
             <div className="recent-thumb">
-              <img src={p.images[0]} alt="" />
+              <img src={`${API_BASE}${p.images[0]}`} alt="" />
             </div>
           )}
           <div className="recent-meta">

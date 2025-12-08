@@ -7,8 +7,11 @@ import ProfileHeader from '../components/profile/ProfileHeader'
 import ProfileTabs from '../components/profile/ProfileTabs'
 import CategoriesJoined from '../components/profile/CategoriesJoined'
 import MyPostsSidebar from '../components/profile/MyPostsSidebar'
+import PeopleYouMayKnow from '../components/profile/PeopleYouMayKnow'
+import CategorySuggestions from '../components/CategorySuggestions'
 import './profile.css'
 import '../components/profile/profile-ui.css'
+import '../components/CommonSidebar.css'
 
 
 export default function ProfilePage() {
@@ -26,9 +29,11 @@ export default function ProfilePage() {
     setLoading(true)
     try {
       const res = await api.get(`/users/handle/${handle}`)
-      setProfile(res.data.user)
-      // load posts by this user (backend: supports ?author=<id>)
-      const postsRes = await api.get(`/posts?author=${res.data.user.id}&limit=10`)
+      const profileUser = res.data.user
+      setProfile(profileUser)
+      // load posts by THIS profile user (not current user)
+      const userId = profileUser._id || profileUser.id
+      const postsRes = await api.get(`/posts?author=${userId}&limit=10`)
       setMyPosts(postsRes.data.posts || [])
     } catch (err) {
       console.error('Load profile error', err)
@@ -46,13 +51,12 @@ export default function ProfilePage() {
     <div className="profile-root container-grid">
       <aside className="left-col">
         <CategoriesJoined
-  categories={profile.categoriesPreview || []}
-  onPostCreated={() => {
-    // optional: refresh profile posts list
-    fetchProfile()
-  }}
-/>
-
+          categories={profile.categoriesPreview || []}
+          onPostCreated={() => {
+            fetchProfile()
+          }}
+        />
+        <CategorySuggestions title="Categories You May Like" />
       </aside>
 
       <main className="center-col profile-main">
@@ -65,6 +69,7 @@ export default function ProfilePage() {
 
       <aside className="right-col">
         <MyPostsSidebar posts={myPosts} />
+        {isOwner && <PeopleYouMayKnow />}
       </aside>
     </div>
   )

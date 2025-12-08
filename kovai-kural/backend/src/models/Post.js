@@ -15,5 +15,7 @@ const postSchema = new mongoose.Schema({
   downvoters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
+postSchema.index({ title: 'text', body: 'text' });
+
 module.exports = mongoose.model('Post', postSchema);
 

@@ -118,14 +118,38 @@ function CommentComposer({ postId, parentId = null, onCreated, autoFocus = false
 function CommentNode({ node, postId, depth = 0, maxDepth = 6, onReplyCreated }) {
   const [showReply, setShowReply] = useState(false)
   const [collapsedChildren, setCollapsedChildren] = useState(false)
+  const [votes, setVotes] = useState(node.votes || 0)
   const { user } = useAuth()
 
   const toggleReply = () => setShowReply(s => !s)
   const toggleChildren = () => setCollapsedChildren(s => !s)
 
+  async function handleVote(type) {
+    if (!user) return
+    try {
+      const res = await api.post(`/comments/${node._id}/vote`, { type })
+      setVotes(res.data.votes)
+    } catch (err) {
+      console.error('Comment vote error', err)
+    }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm('Delete this comment?')) return
+    try {
+      await api.delete(`/comments/${node._id}`)
+      if (onReplyCreated) onReplyCreated()
+    } catch (err) {
+      console.error('Delete comment error', err)
+      alert(err?.response?.data?.message || 'Failed to delete comment')
+    }
+  }
+
+  const canDelete = user && (user.id === node.author?._id || user.role === 'ADMIN');
+
   return (
     <div className="comment-node" style={{ marginLeft: depth ? 20 : 0 }}>
-      <div className="comment-main">
+      <div className="comment-main comment-bordered">
         <img className="comment-avatar" src={node.author?.avatarUrl ? `${import.meta.env.VITE_API_BASE || 'http://localhost:5000'}${node.author.avatarUrl}` : '/default-avatar.png'} alt={node.author?.name} />
         <div className="comment-body">
           <div className="comment-meta">
@@ -136,8 +160,13 @@ function CommentNode({ node, postId, depth = 0, maxDepth = 6, onReplyCreated }) 
           <div className="comment-text">{node.body}</div>
 
           <div className="comment-actions">
-            <button className="btn-link small" onClick={toggleReply}>{showReply ? 'Cancel' : 'Reply'}</button>
-            {/* placeholder for upvote/downvote on comments in future */}
+            <button className="vote-btn" onClick={() => handleVote('up')} disabled={!user}>▲</button>
+            <span className="vote-count" style={{margin:'0 4px'}}>{votes}</span>
+            <button className="vote-btn" onClick={() => handleVote('down')} disabled={!user}>▼</button>
+            <button className="btn-link small" style={{marginLeft:8}} onClick={toggleReply}>{showReply ? 'Cancel' : 'Reply'}</button>
+            {canDelete && (
+              <button className="btn-link small" style={{color:'var(--danger)'}} onClick={handleDelete}>Delete</button>
+            )}
             {node.children && node.children.length > 0 && depth + 1 < maxDepth && (
               <button className="btn-link small" onClick={toggleChildren}>
                 {collapsedChildren ? `Show ${node.children.length} replies` : 'Hide replies'}

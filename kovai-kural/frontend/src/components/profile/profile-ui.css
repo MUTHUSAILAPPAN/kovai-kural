@@ -39,20 +39,20 @@
 /* COMPACT variant – used in MyPostsSidebar */
 
 .post-list-item.compact {
-  padding: 6px 8px;
-  border-radius: 12px;
-  background: rgba(15, 23, 42, 0.95);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.75);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  box-shadow: none;
   justify-content: space-between;
-}
-
-[data-theme="light"] .post-list-item.compact {
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  transition: all 0.2s ease;
 }
 
 .post-list-item.compact:hover {
   transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
+  background: var(--hover-bg);
 }
 
 /* text part */
@@ -143,17 +143,53 @@
 
 .my-posts.card {
   height: auto;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.my-posts.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
 }
 
 .my-posts h3 {
   font-size: 1rem;
-  margin-bottom: 8px;
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: var(--primary);
 }
 
 .mp-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.mp-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.mp-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mp-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.mp-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 /* ---------------------- */
@@ -204,26 +240,6 @@
   border-left: 3px solid var(--line-color);
   padding: 8px;
   border-radius: 6px;
-}
-
-/* Dark / Light THEME Variables */
-:root[data-theme="light"] {
-  --bg: #ffffff;
-  --card-bg: #fafafa;
-  --text: #1e1e1e;
-  --text-muted: #606060;
-  --primary: #0078ff;
-  --line-color: rgba(0, 0, 0, 0.15);
-  --hover-bg: rgba(0, 0, 0, 0.08);
-}
-
-:root[data-theme="dark"] {
-  --bg: #020617;
-  --card-bg: #111827;
-  --text: #e2e8f0;
-  --text-muted: #9aa4b3;
-  --primary: #56a8ff;
-  --line-color: rgba(255, 255, 255, 0.12);
 }
 
 
@@ -330,27 +346,27 @@ a:hover {
 .ph-stats-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 16px;
+  margin-top: 12px;
 }
 
 .ph-stat-pill {
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line-color);
-  font-size: 0.75rem;
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .ph-stat-number {
-  font-weight: 600;
-  line-height: 1.1;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
 }
 
 .ph-stat-label {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
+  font-weight: 500;
 }
 
 .ph-actions-row {
@@ -489,4 +505,95 @@ a:hover {
 
 .activity-icon-btn:hover {
   background: var(--hover-bg);
+}
+
+/* ===== PEOPLE YOU MAY KNOW ===== */
+
+.people-suggestions.card {
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.people-suggestions h3 {
+  font-size: 1rem;
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.people-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.person-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.person-item:hover {
+  background: var(--hover-bg);
+}
+
+.person-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
+}
+
+.person-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.person-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.person-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.person-handle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-follow-small {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-follow-small:hover {
+  background: var(--primary);
+  color: white;
 }

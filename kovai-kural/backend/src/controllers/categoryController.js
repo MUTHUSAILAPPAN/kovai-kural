@@ -65,3 +65,26 @@ exports.getCategoryBySlug = async (req, res, next) => {
   }
 };
 
+exports.getCategorySuggestions = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    let query = {};
+    
+    // Exclude categories user is already a member of
+    if (userId) {
+      query.members = { $ne: userId };
+    }
+    
+    // Get random categories with most posts
+    const categories = await Category.find(query)
+      .select('title slug postCount')
+      .sort({ postCount: -1 })
+      .limit(5)
+      .lean();
+    
+    res.json({ categories });
+  } catch (err) {
+    next(err);
+  }
+};
+

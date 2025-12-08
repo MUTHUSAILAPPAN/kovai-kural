@@ -42,49 +42,45 @@ export default function CreateCategoryModal({ open, onClose, onCreated }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal-card"
+        className="modal-content"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        <div className="modal-header">
-          <h3>Create Category</h3>
-        </div>
+        <h2>Create Category</h2>
 
-        {err && <div className="modal-error">{err}</div>}
+        {err && <div className="error">{err}</div>}
 
-        <form className="modal-form" onSubmit={submit}>
-          <label className="modal-label">
-            Title
+        <form onSubmit={submit}>
+          <div className="form-group">
+            <label>Title</label>
             <input
-              className="modal-input"
+              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Roads, Water, Waste"
             />
-          </label>
+          </div>
 
-          <label className="modal-label">
-            Description
+          <div className="form-group">
+            <label>Description</label>
             <textarea
-              className="modal-textarea"
               value={desc}
               onChange={(e) => setDesc(e.target.value)}
               rows={3}
               placeholder="Short summary of what belongs in this category."
             />
-          </label>
+          </div>
 
-          <label className="modal-label">
-            Rules (guidelines for posting)
+          <div className="form-group">
+            <label>Rules (guidelines for posting)</label>
             <textarea
-              className="modal-textarea"
               value={rules}
               onChange={(e) => setRules(e.target.value)}
               rows={3}
               placeholder="Be specific: what is allowed / not allowed in this category."
             />
-          </label>
+          </div>
 
           <div className="modal-actions">
             <button

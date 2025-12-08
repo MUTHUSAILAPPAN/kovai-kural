@@ -2,8 +2,9 @@
 const express = require('express');
 const morgan = require('morgan');
 const helmet = require('helmet');
-const cors = require('cors');
 const path = require('path');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 
 const healthRoutes = require('./routes/health');
 const { notFoundHandler, errorHandler } = require('./middlewares/errorHandlers');
@@ -12,15 +13,26 @@ const userRoutes = require('./routes/users');
 
 const postsRoutes = require('./routes/posts');
 const categoriesRoutes = require('./routes/categories');
+const commentsRoutes = require('./routes/comments');
 
 const searchRoutes = require('./routes/search');
 const notificationsRoutes = require('./routes/notifications');
+const reportsRoutes = require('./routes/reports');
 
 
 
 const fs = require('fs');
 
 const app = express();
+
+// Rate limiting - only for write operations to prevent abuse
+const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // increased limit for development
+  message: 'Too many requests, please try again later.',
+  skip: (req) => req.method === 'GET' // skip rate limiting for GET requests
+});
+app.use('/api/', writeLimiter);
 
 // Basic middlewares
 app.use(helmet());
@@ -77,6 +89,8 @@ app.use('/api/users', userRoutes);
 
 app.use('/api/posts', postsRoutes);
 app.use('/api/categories', categoriesRoutes);
+app.use('/api/comments', commentsRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // 404 and error handlers
 app.use(notFoundHandler);

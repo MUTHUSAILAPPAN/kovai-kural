@@ -1,12 +1,19 @@
 // src/components/profile/ProfileHeader.jsx
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import api from '../../services/api'
+import EditProfileModal from '../EditProfileModal'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
 
 export default function ProfileHeader({ profile, isOwner, onProfileUpdated }) {
-  const { user } = useAuth()
+  const { user, setUser } = useAuth()
+  const [isFollowing, setIsFollowing] = useState(
+    user?.following?.includes(profile?.id || profile?._id) || false
+  )
+  const [followersCount, setFollowersCount] = useState(profile?.followersCount || 0)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const avatarSrc = profile.avatarUrl
     ? `${API_BASE}${profile.avatarUrl}`
@@ -22,8 +29,29 @@ export default function ProfileHeader({ profile, isOwner, onProfileUpdated }) {
     : ''
 
   async function handleFollowToggle() {
-    if (!user || isOwner) return
-    // optional: follow/unfollow later
+    if (!user || isOwner || loading) return
+    setLoading(true)
+    try {
+      const userId = profile.id || profile._id
+      if (isFollowing) {
+        await api.post(`/users/${userId}/unfollow`)
+        setIsFollowing(false)
+        setFollowersCount(prev => prev - 1)
+      } else {
+        await api.post(`/users/${userId}/follow`)
+        setIsFollowing(true)
+        setFollowersCount(prev => prev + 1)
+      }
+    } catch (err) {
+      console.error('Follow error', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleProfileUpdated(updatedUser) {
+    setUser(updatedUser)
+    if (onProfileUpdated) onProfileUpdated()
   }
 
   return (
@@ -57,7 +85,7 @@ export default function ProfileHeader({ profile, isOwner, onProfileUpdated }) {
 
           <div className="ph-stats-row">
             <div className="ph-stat-pill">
-              <span className="ph-stat-number">{profile.followersCount || 0}</span>
+              <span className="ph-stat-number">{followersCount}</span>
               <span className="ph-stat-label">Followers</span>
             </div>
             <div className="ph-stat-pill">
@@ -75,26 +103,43 @@ export default function ProfileHeader({ profile, isOwner, onProfileUpdated }) {
       {/* Actions row */}
       <div className="ph-actions-row">
         {isOwner ? (
-          <button
-            type="button"
-            className="btn btn-ghost ph-edit-btn"
-            onClick={() => {
-              // hook to open edit modal later
-              alert('Hook your Edit Profile modal here')
-            }}
-          >
-            Edit profile
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn btn-ghost ph-edit-btn"
+              onClick={() => setEditModalOpen(true)}
+            >
+              Edit profile
+            </button>
+            {user?.role === 'ADMIN' && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => window.location.href = '/admin'}
+                style={{ marginLeft: '0.5rem' }}
+              >
+                Admin Panel
+              </button>
+            )}
+          </>
         ) : (
           <button
             type="button"
             className="btn btn-primary"
             onClick={handleFollowToggle}
+            disabled={loading}
           >
-            Follow
+            {loading ? '...' : isFollowing ? 'Unfollow' : 'Follow'}
           </button>
         )}
       </div>
+
+      <EditProfileModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        profile={profile}
+        onUpdated={handleProfileUpdated}
+      />
     </section>
   )
 }

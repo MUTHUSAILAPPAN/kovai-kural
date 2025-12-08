@@ -6,7 +6,7 @@ import PostListItem from '../PostListItem'
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
 
 export default function ProfileTabs({ profile, isOwner }) {
-  const tabs = ['Saved Posts', 'Comments', 'Tagged Posts']
+  const tabs = ['Saved Posts', 'Comments', 'Tagged Posts', 'Moderated']
   const [active, setActive] = useState('Comments')
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
@@ -37,12 +37,24 @@ export default function ProfileTabs({ profile, isOwner }) {
       } else if (active === 'Tagged Posts') {
         const res = await api.get(`/users/${userId}/tagged`)
         setItems(res.data.posts || [])
+      } else if (active === 'Moderated') {
+        const res = await api.get(`/users/${userId}/moderated`)
+        setItems(res.data.categories || [])
       }
     } catch (err) {
       console.error('Load tab', err)
       setError(err?.response?.data?.message || 'Failed to load items')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleCommentVote(commentId, type) {
+    try {
+      await api.post(`/comments/${commentId}/vote`, { type })
+      load()
+    } catch (err) {
+      console.error('Comment vote error', err)
     }
   }
 
@@ -74,7 +86,24 @@ export default function ProfileTabs({ profile, isOwner }) {
         )}
 
         <div className="tab-list">
-          {active === 'Comments' ? (
+          {active === 'Moderated' ? (
+            items.map(cat => (
+              <div key={cat._id} className="activity-row card">
+                <div className="activity-content">
+                  <div className="activity-title-row">
+                    <button
+                      type="button"
+                      className="activity-post-link"
+                      onClick={() => window.location.href = `/category/${cat.slug}`}
+                    >
+                      {cat.title}
+                    </button>
+                  </div>
+                  <div className="muted small">{cat.postCount || 0} posts</div>
+                </div>
+              </div>
+            ))
+          ) : active === 'Comments' ? (
             items.map(c => (
               <div key={c._id} className="activity-row card">
                 <div className="activity-avatar-wrap">
@@ -107,18 +136,20 @@ export default function ProfileTabs({ profile, isOwner }) {
                   </div>
 
                   <div className="activity-actions">
-                    {/* non-functional arrows for now, purely visual */}
                     <button
                       type="button"
                       className="activity-icon-btn"
                       title="Upvote"
+                      onClick={() => handleCommentVote(c._id, 'up')}
                     >
                       ▲
                     </button>
+                    <span className="vote-count">{c.votes || 0}</span>
                     <button
                       type="button"
                       className="activity-icon-btn"
                       title="Downvote"
+                      onClick={() => handleCommentVote(c._id, 'down')}
                     >
                       ▼
                     </button>

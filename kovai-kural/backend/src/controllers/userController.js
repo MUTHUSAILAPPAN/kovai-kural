@@ -88,10 +88,15 @@ exports.getPublicProfileByHandle = async (req, res, next) => {
     const { handle } = req.params;
     const user = await User.findOne({ handle: handle.toLowerCase() }).select('-passwordHash -__v').lean();
     if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    // Get categories where user is a member
+    const Category = require('../models/Category');
+    const categories = await Category.find({ members: user._id }).select('title slug postCount').limit(10).lean();
+    
     user.followersCount = Array.isArray(user.followers) ? user.followers.length : 0;
     user.followingCount = Array.isArray(user.following) ? user.following.length : 0;
     user.joinedAt = user.createdAt;
-    user.categoriesPreview = user.categories ? user.categories.slice(0,6) : [];
+    user.categoriesPreview = categories;
     res.json({ user });
   } catch (err) { next(err); }
 };
@@ -183,5 +188,41 @@ exports.getCommentsByUser = async (req, res, next) => {
     if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
     const comments = await Comment.find({ author: id }).sort({ createdAt: -1 }).populate('postId', 'title').lean();
     res.json({ comments });
+  } catch (err) { next(err); }
+};
+
+// Get user suggestions (people you may know)
+exports.getUserSuggestions = async (req, res, next) => {
+  try {
+    const currentUserId = req.user?.id;
+    const query = currentUserId ? { _id: { $ne: currentUserId } } : {};
+    
+    // Get random users, excluding current user and their following
+    const currentUser = currentUserId ? await User.findById(currentUserId).select('following').lean() : null;
+    if (currentUser && currentUser.following?.length) {
+      query._id = { $nin: [currentUserId, ...currentUser.following] };
+    }
+    
+    const users = await User.find(query)
+      .select('name handle avatarUrl bio')
+      .limit(5)
+      .lean();
+    
+    res.json({ users });
+  } catch (err) { next(err); }
+};
+
+// Get categories where user is moderator
+exports.getModeratedCategories = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'Invalid user id' });
+    
+    const Category = require('../models/Category');
+    const categories = await Category.find({ moderators: id })
+      .select('title slug postCount')
+      .lean();
+    
+    res.json({ categories });
   } catch (err) { next(err); }
 };

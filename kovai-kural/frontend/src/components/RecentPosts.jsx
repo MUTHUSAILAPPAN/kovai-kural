@@ -1,17 +1,51 @@
-import React from 'react'
-export default function RecentPosts({ posts = [] }) {
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import api from '../services/api'
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5000'
+
+export default function RecentPosts() {
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const nav = useNavigate()
+
+  useEffect(() => {
+    fetchPosts()
+  }, [])
+
+  async function fetchPosts() {
+    try {
+      const res = await api.get('/posts?sort=recent&limit=6')
+      setPosts(res.data.posts || [])
+    } catch (err) {
+      console.error('Failed to fetch recent posts', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) return null
+
   return (
-    <div className="recent-panel">
-      <h3>Recent Posts</h3>
-      <div className="recent-list">
+    <div className="card sidebar-card">
+      <h3 className="sidebar-title">Recent Posts</h3>
+      <div className="recent-posts-list">
         {posts.map(p => (
-          <div className="recent-item" key={p._id || p.id}>
-            <div className="ri-left">
-              <img src={p.author?.avatarUrl ? `${import.meta.env.VITE_API_BASE || 'http://localhost:5000'}${p.author.avatarUrl}` : '/default-avatar.png'} alt="a" />
-            </div>
-            <div className="ri-body">
-              <div className="ri-title">{p.title}</div>
-              <div className="muted small">{p.category?.title || 'General'} • {new Date(p.createdAt).toLocaleDateString()}</div>
+          <div
+            key={p._id}
+            className="recent-post-item"
+            onClick={() => nav(`/post/${p._id}`)}
+          >
+            {p.images && p.images.length > 0 && (
+              <div className="recent-thumb">
+                <img src={`${API_BASE}${p.images[0]}`} alt="" />
+              </div>
+            )}
+            <div className="recent-meta">
+              <div className="recent-title">{p.title}</div>
+              <div className="recent-sub muted small">
+                {p.category?.title || 'General'}
+              </div>
             </div>
           </div>
         ))}

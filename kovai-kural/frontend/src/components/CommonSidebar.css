@@ -1,0 +1,194 @@
+/* ===== Enhanced Consistent Sidebar Styling ===== */
+
+/* Card containers */
+.categories-panel.card,
+.category-suggestions.card,
+.people-suggestions.card,
+.my-posts.card {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accent bar on top */
+.categories-panel.card::before,
+.category-suggestions.card::before,
+.people-suggestions.card::before,
+.my-posts.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+/* Headings */
+.categories-panel h3,
+.category-suggestions h3,
+.people-suggestions h3,
+.my-posts h3 {
+  font-size: 1rem;
+  margin: 0 0 12px;
+  font-weight: 600;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Lists */
+.cat-list,
+.people-list,
+.mp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+/* Scrollbar styling */
+.cat-list::-webkit-scrollbar,
+.people-list::-webkit-scrollbar,
+.mp-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cat-list::-webkit-scrollbar-track,
+.people-list::-webkit-scrollbar-track,
+.mp-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cat-list::-webkit-scrollbar-thumb,
+.people-list::-webkit-scrollbar-thumb,
+.mp-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.cat-list::-webkit-scrollbar-thumb:hover,
+.people-list::-webkit-scrollbar-thumb:hover,
+.mp-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Category/Person Items */
+.cat-item,
+.person-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.cat-item:hover,
+.person-item:hover {
+  background: var(--hover-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent);
+}
+
+/* Avatars */
+.cat-avatar,
+.person-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  border: 2px solid var(--bg-elevated);
+}
+
+.person-avatar {
+  object-fit: cover;
+}
+
+/* Body content */
+.cat-body,
+.person-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.cat-title,
+.person-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.person-handle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Create button section */
+.cat-create {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* Follow button */
+.btn-follow-small {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.btn-follow-small:hover {
+  background: var(--primary);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Comment borders */
+.comment-bordered {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.comment-bordered:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}

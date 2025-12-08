@@ -41,6 +41,11 @@ export default function Categories() {
     return t.includes(qLower) || d.includes(qLower)
   })
 
+  // Sort by post count for active categories
+  const sortedByActivity = [...filtered].sort((a, b) => (b.postCount || 0) - (a.postCount || 0))
+  const mostActive = sortedByActivity.slice(0, 6)
+  const remaining = sortedByActivity.slice(6)
+
   return (
     <div className="categories-page">
       <div className="categories-header-row">
@@ -63,37 +68,66 @@ export default function Categories() {
         </div>
       </div>
 
-      {/* grid wrapper */}
-      <div className="categories-grid">
-        {filtered.map(cat => (
-          <article
-            key={cat._id}
-            className="category-card"
-            onClick={() => nav(`/category/${cat.slug}`)}
-          >
-            <div className="category-card-title">{cat.title}</div>
+      {/* Most Active Categories */}
+      {!q && mostActive.length > 0 && (
+        <section className="category-section">
+          <h2 className="section-title">🔥 Most Active Categories</h2>
+          <div className="categories-grid">
+            {mostActive.map(cat => (
+              <article
+                key={cat._id}
+                className="category-card active-card"
+                onClick={() => nav(`/category/${cat.slug}`)}
+              >
+                <div className="category-card-title">{cat.title}</div>
+                <div className="category-card-meta">
+                  {cat.postCount || 0} posts • Created{' '}
+                  {cat.createdAt
+                    ? new Date(cat.createdAt).toLocaleDateString()
+                    : '—'}
+                </div>
+                {cat.description && (
+                  <div className="category-card-description">
+                    {cat.description}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
-            <div className="category-card-meta">
-              {cat.postCount || 0} posts • Created{' '}
-              {cat.createdAt
-                ? new Date(cat.createdAt).toLocaleDateString()
-                : '—'}
-            </div>
-
-            {cat.description && (
-              <div className="category-card-description">
-                {cat.description}
+      {/* All Categories */}
+      <section className="category-section">
+        <h2 className="section-title">{q ? 'Search Results' : '📂 All Categories'}</h2>
+        <div className="categories-grid">
+          {(q ? filtered : remaining).map(cat => (
+            <article
+              key={cat._id}
+              className="category-card"
+              onClick={() => nav(`/category/${cat.slug}`)}
+            >
+              <div className="category-card-title">{cat.title}</div>
+              <div className="category-card-meta">
+                {cat.postCount || 0} posts • Created{' '}
+                {cat.createdAt
+                  ? new Date(cat.createdAt).toLocaleDateString()
+                  : '—'}
               </div>
-            )}
-
-            {cat.rules && (
-              <div className="category-card-rules">
-                <strong>Rules:</strong> {cat.rules}
-              </div>
-            )}
-          </article>
-        ))}
-      </div>
+              {cat.description && (
+                <div className="category-card-description">
+                  {cat.description}
+                </div>
+              )}
+              {cat.rules && (
+                <div className="category-card-rules">
+                  <strong>Rules:</strong> {cat.rules}
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      </section>
 
       <CreateCategoryModal
         open={open}

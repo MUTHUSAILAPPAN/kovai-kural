@@ -15,6 +15,9 @@ import CategoryPage from './pages/CategoryPage'
 import SearchResults from './pages/SearchResults'
 import NotificationsPage from './pages/NotificationsPage'
 import PostPage from './pages/PostPage'
+import AdminPanel from './pages/AdminPanel'
+import ModeratorPanel from './pages/ModeratorPanel'
+import NotFound from './pages/NotFound'
 import { connectSocket } from './services/socket'
 
 export default function App() {
@@ -98,7 +101,25 @@ export default function App() {
           />
           <Route path="/post/:id" element={<PostPage />} />
 
-          <Route path="*" element={<div>Not found</div>} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/moderator/:categoryId"
+            element={
+              <ProtectedRoute>
+                <ModeratorPanel />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
     </div>

@@ -82,32 +82,29 @@ export default function CreatePostModal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal-card"
+        className="modal-content"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        <div className="modal-header">
-          <h3>Create Post</h3>
-        </div>
+        <h2>Create Post</h2>
 
-        {error && <div className="modal-error">{error}</div>}
+        {error && <div className="error">{error}</div>}
 
-        <form className="modal-form" onSubmit={handleSubmit}>
-          <label className="modal-label">
-            Title
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label>Title</label>
             <input
-              className="modal-input"
+              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Give your issue a clear title"
             />
-          </label>
+          </div>
 
-          <label className="modal-label">
-            Category
+          <div className="form-group">
+            <label>Category</label>
             <select
-              className="modal-input"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -118,38 +115,36 @@ export default function CreatePostModal({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
 
-          <label className="modal-label">
-            Tag users (handles, comma separated)
+          <div className="form-group">
+            <label>Tag users (handles, comma separated)</label>
             <input
-              className="modal-input"
+              type="text"
               value={mentionsText}
               onChange={(e) => setMentionsText(e.target.value)}
               placeholder="@official1, @public_user2"
             />
-          </label>
+          </div>
 
-          <label className="modal-label">
-            Description
+          <div className="form-group">
+            <label>Description</label>
             <textarea
-              className="modal-textarea"
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={6}
               placeholder="Describe the grievance, what you tried, and what you expect."
             />
-          </label>
+          </div>
 
-          <label className="modal-label">
-            Image (optional)
+          <div className="form-group">
+            <label>Image (optional)</label>
             <input
-              className="modal-input"
               type="file"
               accept="image/*"
               onChange={(e) => setImage(e.target.files[0])}
             />
-          </label>
+          </div>
 
           <div className="modal-actions">
             <button

@@ -2,6 +2,7 @@
 const Post = require('../models/Post');
 const Category = require('../models/Category');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 const mongoose = require('mongoose');
 
 exports.createPost = async (req, res, next) => {
@@ -63,13 +64,44 @@ if (mentionsInput) {
     await post.populate({ path: 'category', select: 'title slug' });
 
     if (categoryRef) {
-      await Category.findByIdAndUpdate(categoryRef, { $inc: { postCount: 1 }, $addToSet: { members: req.user.id } });
+      const cat = await Category.findByIdAndUpdate(categoryRef, { $inc: { postCount: 1 }, $addToSet: { members: req.user.id } }, { new: true });
+      
+      // Notify category members
+      if (cat && cat.members.length > 0) {
+        const notifications = cat.members
+          .filter(m => m.toString() !== req.user.id)
+          .map(memberId => ({
+            recipient: memberId,
+            type: 'NEW_POST',
+            message: `New post in ${cat.title}: ${title}`,
+            postId: post._id
+          }));
+        if (notifications.length > 0) {
+          await Notification.insertMany(notifications);
+        }
+      }
     }
 
     res.status(201).json({ post });
   } catch (err) {
     next(err);
   }
+};
+
+exports.getPostById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post ID' });
+    }
+    const post = await Post.findById(id)
+      .populate('author', 'name handle avatarUrl')
+      .populate('category', 'title slug')
+      .populate('mentions', 'name handle avatarUrl')
+      .lean();
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    res.json({ post });
+  } catch (err) { next(err); }
 };
 
 exports.listPosts = async (req, res, next) => {
@@ -96,6 +128,30 @@ if (req.query.category && mongoose.Types.ObjectId.isValid(req.query.category)) {
   } catch (err) { next(err); }
 };
 
+// Delete post: DELETE /api/posts/:id
+exports.deletePost = async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Authentication required' });
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post ID' });
+    }
+
+    const post = await Post.findById(id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // Only author or admin can delete
+    if (post.author.toString() !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Not authorized to delete this post' });
+    }
+
+    await Post.findByIdAndDelete(id);
+    res.json({ message: 'Post deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Vote endpoint: POST /api/posts/:id/vote { type: 'up' | 'down' }
 exports.vote = async (req, res, next) => {
   try {
@@ -104,7 +160,7 @@ exports.vote = async (req, res, next) => {
     const { type } = req.body;
     if (!['up', 'down'].includes(type)) return res.status(400).json({ message: 'type must be "up" or "down"' });
 
-    const post = await Post.findById(id);
+    const post = await Post.findById(id).populate('author', 'name');
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
     const userId = req.user.id.toString();
@@ -112,12 +168,15 @@ exports.vote = async (req, res, next) => {
     const alreadyUp = post.upvoters.some(u => u.toString() === userId);
     const alreadyDown = post.downvoters.some(u => u.toString() === userId);
 
+    let shouldNotify = false;
+
     if (type === 'up') {
       if (alreadyUp) {
         // remove upvote (toggle)
         post.upvoters = post.upvoters.filter(u => u.toString() !== userId);
       } else {
         post.upvoters.push(userId);
+        shouldNotify = true;
         // remove down if present
         if (alreadyDown) post.downvoters = post.downvoters.filter(u => u.toString() !== userId);
       }
@@ -133,6 +192,16 @@ exports.vote = async (req, res, next) => {
     // recompute net votes
     post.votes = (post.upvoters ? post.upvoters.length : 0) - (post.downvoters ? post.downvoters.length : 0);
     await post.save();
+
+    // Notify post author on upvote
+    if (shouldNotify && post.author._id.toString() !== userId) {
+      await Notification.create({
+        recipient: post.author._id,
+        type: 'VOTE',
+        message: `Someone upvoted your post: ${post.title}`,
+        postId: post._id
+      });
+    }
 
     // return counts
     res.json({

@@ -24,6 +24,9 @@ export default function Navbar({ theme, onToggleTheme }) {
           {user && <NotificationBell />}
           {user ? (
             <>
+              {user.role === 'ADMIN' && (
+                <Link to="/admin" className="nav-link">Admin</Link>
+              )}
               <Link to={`/profile/${user.handle}`} className="nav-link">
                 {user.name}
               </Link>

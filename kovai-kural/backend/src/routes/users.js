@@ -5,7 +5,8 @@ const path = require('path');
 
 const { verifyToken, allowRoles } = require('../middlewares/auth');
 const User = require('../models/User');
-const { updateProfile, changePassword, getPublicProfileById, getPublicProfileByHandle, followUser, unfollowUser, savePost, unsavePost, getSavedPosts, getTaggedPosts, getCommentsByUser } = require('../controllers/userController');
+const { updateProfile, changePassword, getPublicProfileById, getPublicProfileByHandle, followUser, unfollowUser, savePost, unsavePost, getSavedPosts, getTaggedPosts, getCommentsByUser, getUserSuggestions, getModeratedCategories } = require('../controllers/userController');
+const { getAnalytics } = require('../controllers/adminController');
 
 
 // Setup multer storage
@@ -54,24 +55,7 @@ router.post('/me/password', verifyToken, changePassword);
 router.post('/me/save/:postId', verifyToken, savePost);
 router.post('/me/unsave/:postId', verifyToken, unsavePost);
 
-// Public routes (by user id)
-router.get('/:id/saved', getSavedPosts);
-router.get('/:id/tagged', getTaggedPosts);
-router.get('/:id/comments', getCommentsByUser);
-
-
-// PUBLIC profile endpoints
-// GET by id
-router.get('/:id', getPublicProfileById);
-
-// GET by handle (slug). Use /handle/:handle to avoid conflict with :id
-router.get('/handle/:handle', getPublicProfileByHandle);
-
-// Follow / unfollow (authenticated)
-router.post('/:id/follow', verifyToken, followUser);
-router.post('/:id/unfollow', verifyToken, unfollowUser);
-
-// keep admin list route and others below
+// ADMIN routes (must come before /:id routes)
 router.get('/all', verifyToken, allowRoles('ADMIN'), async (req, res, next) => {
   try {
     const users = await User.find().select('name handle email role createdAt').limit(200);
@@ -79,11 +63,38 @@ router.get('/all', verifyToken, allowRoles('ADMIN'), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ADMIN list route (unchanged)
-router.get('/all', verifyToken, allowRoles('ADMIN'), async (req, res, next) => {
+router.get('/analytics', verifyToken, allowRoles('ADMIN'), getAnalytics);
+
+// GET user suggestions
+router.get('/suggestions', getUserSuggestions);
+
+// GET by handle (must come before /:id to avoid conflict)
+router.get('/handle/:handle', getPublicProfileByHandle);
+
+// Public routes (by user id)
+router.get('/:id/saved', getSavedPosts);
+router.get('/:id/tagged', getTaggedPosts);
+router.get('/:id/comments', getCommentsByUser);
+router.get('/:id/moderated', getModeratedCategories);
+
+// PUBLIC profile endpoints
+router.get('/:id', getPublicProfileById);
+
+// Follow / unfollow (authenticated)
+router.post('/:id/follow', verifyToken, followUser);
+router.post('/:id/unfollow', verifyToken, unfollowUser);
+
+// Make user moderator (admin only)
+router.post('/:id/promote', verifyToken, allowRoles('ADMIN'), async (req, res, next) => {
   try {
-    const users = await User.find().select('name email role createdAt').limit(200);
-    res.json({ count: users.length, users });
+    const { id } = req.params;
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role === 'ADMIN') return res.status(400).json({ message: 'User is already an admin' });
+    
+    user.role = 'OFFICIAL';
+    await user.save();
+    res.json({ message: 'User promoted to moderator', user: { id: user._id, name: user.name, role: user.role } });
   } catch (err) { next(err); }
 });
 

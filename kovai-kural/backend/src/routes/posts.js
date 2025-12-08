@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const { verifyToken } = require('../middlewares/auth');
-const { createPost, listPosts, vote } = require('../controllers/postController');
+const { createPost, listPosts, getPostById, deletePost, vote } = require('../controllers/postController');
 const { createComment, listCommentsForPost } = require('../controllers/commentController');
 
 // multer storage (as before)
@@ -25,6 +25,12 @@ router.post('/', verifyToken, upload.array('images', 4), createPost);
 
 // list posts
 router.get('/', listPosts);
+
+// get single post
+router.get('/:id', getPostById);
+
+// delete post
+router.delete('/:id', verifyToken, deletePost);
 
 // vote
 router.post('/:id/vote', verifyToken, vote);
